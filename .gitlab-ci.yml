@@ -1,0 +1,59 @@
+variables:
+  AUTO_DEVOPS_DISABLED: "true"
+  PYTHON_BIN: "python3"
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+
+stages:
+  - lint
+  - validate
+  - dry-run
+  - live-smoke
+
+default:
+  image: debian:bookworm-slim
+  before_script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends bash bats ca-certificates git make perl python3 python3-pytest ripgrep shellcheck
+
+shell-lint:
+  stage: lint
+  script:
+    - make lint
+
+local-validation:
+  stage: validate
+  script:
+    - make test
+
+render-daedalus-manifests:
+  stage: dry-run
+  script:
+    - make dry-run
+  artifacts:
+    when: always
+    paths:
+      - reports/rendered-manifests/daedalus-runtime.yaml
+      - reports/rendered-manifests/daedalus-build-deploy.txt
+      - reports/rendered-manifests/daedalus-example-local-gpu.yaml
+    expire_in: 7 days
+
+# Default CI is intentionally offline: no kubeconfig, model token, registry token, or live endpoint is required.
+# Live smoke is manual/protected because it can use cluster credentials, spend GPU/runtime capacity, and create or
+# update OpenShift Secrets. Protected refs/runners keep those masked variables away from untrusted branches.
+
+live-daedalus-smoke:
+  stage: live-smoke
+  image: quay.io/openshift/origin-cli:4.19
+  before_script: []
+  rules:
+    - if: '$LIVE_OPENSHIFT_SMOKE == "1"'
+      when: manual
+      allow_failure: false
+    - when: never
+  script:
+    - ./scripts/gitlab-live-smoke.sh
+  artifacts:
+    when: always
+    paths:
+      - reports/live-smoke/
+    expire_in: 7 days

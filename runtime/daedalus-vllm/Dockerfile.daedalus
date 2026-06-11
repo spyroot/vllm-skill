@@ -1,0 +1,53 @@
+ARG BASE_IMAGE=vllm/vllm-openai:v0.21.0
+FROM ${BASE_IMAGE}
+
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    VLLM_NO_USAGE_STATS=1 \
+    HF_HOME=/models-cache \
+    TRANSFORMERS_CACHE=/models-cache \
+    XDG_CACHE_HOME=/models-cache
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+      bash \
+      build-essential \
+      ca-certificates \
+      ccache \
+      cmake \
+      curl \
+      dnsutils \
+      g++ \
+      gcc \
+      git \
+      git-lfs \
+      htop \
+      iproute2 \
+      iputils-ping \
+      jq \
+      less \
+      make \
+      ninja-build \
+      lsof \
+      nano \
+      netcat-openbsd \
+      pciutils \
+      pkg-config \
+      procps \
+      python3-dev \
+      strace \
+      tini \
+      vim-tiny \
+      wget \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /opt/daedalus /models-cache
+
+COPY daedalus_smoke.py /opt/daedalus/daedalus_smoke.py
+COPY openai_compat_probe.py /opt/daedalus/openai_compat_probe.py
+
+WORKDIR /workspace
+ENTRYPOINT ["tini", "--"]
+CMD ["python3", "-m", "vllm.entrypoints.openai.api_server"]

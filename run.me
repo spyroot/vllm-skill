@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Tiny direct-HTTP coding sanity check for a Daedalus OpenAI-compatible endpoint.
+# Prefer the OpenShift Route because this is the same shape the skill will call:
+#
+#   export DAEDALUS_API_KEY=<token from approved Secret source>
+#   ./run.me --base-url https://<route-host>/v1
+#
+# For lab routes with a self-signed cluster CA, add:
+#
+#   ./run.me --base-url https://<route-host>/v1 --insecure-skip-tls-verify
+#
+# If the service is only reachable inside the cluster, port-forward it first:
+#
+#   oc -n daedalus port-forward svc/daedalus 8000:8000
+#   ./run.me
+
+repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+python_bin="${PYTHON_BIN:-python3}"
+
+exec "${python_bin}" "${repo_dir}/scripts/daedalus-code-sanity.py" "$@"

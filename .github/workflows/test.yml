@@ -1,0 +1,58 @@
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-validation:
+    name: offline validation and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COVERAGE_FAIL_UNDER: "80"
+      PYTHON_BIN: python3
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bats ripgrep shellcheck
+          python -m pip install --upgrade pip
+          python -m pip install coverage pytest
+
+      - name: Run offline validation
+        run: ./scripts/test.sh
+
+      - name: Run Python coverage
+        run: ./scripts/coverage.sh
+
+      - name: Upload coverage XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: coverage.xml
+          if-no-files-found: error
+
+      - name: Upload coverage HTML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: htmlcov/
+          if-no-files-found: error

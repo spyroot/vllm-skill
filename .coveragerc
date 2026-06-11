@@ -1,0 +1,21 @@
+[run]
+branch = True
+source =
+    scripts
+    runtime/daedalus-vllm
+
+[report]
+show_missing = True
+skip_empty = True
+omit =
+    */tests/*
+    */__pycache__/*
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
